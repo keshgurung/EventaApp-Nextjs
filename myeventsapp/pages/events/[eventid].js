@@ -1,6 +1,6 @@
 import React from "react";
 // import {useRouter} from 'next/router'
-import { getEventById, getAllEvents } from "../../helpers/api-util";
+import { getEventById, getFeaturedEvents } from "../../helpers/api-util";
 import { Fragment } from "react";
 import EventSummary from "../../components/event-detail/event-summary";
 import EvenLogistics from "../../components/event-detail/event-logistics";
@@ -13,7 +13,10 @@ const singleEvent = (props) => {
   const event = props.selectedEvent;
 
   if (!event) {
-    return <p>no event found</p>;
+    return;
+    <div className="center">
+      <p>Loading...</p>;
+    </div>;
   }
 
   return (
@@ -40,15 +43,19 @@ export async function getStaticProps(context) {
     props: {
       selectedEvent: event,
     },
+    revalidate: 30, //if any event data changes,
   };
 }
 
 export async function getStaticPaths() {
-  const events = await getAllEvents();
+  //fetching all events could be a huge waste,
+  // pre render only featured events cuz they r more likely to be visited
+  const events = await getFeaturedEvents();
   const paths = events.map((event) => ({ params: { eventid: event.id } }));
   return {
     paths: paths,
-    fallback: false,
+    //fallback: false, //this will make sure other url is not accepted and takes to 404 page.
+    fallback: true, //tells there are more pages to generate rather than featured events, all events too.
   };
 }
 export default singleEvent;

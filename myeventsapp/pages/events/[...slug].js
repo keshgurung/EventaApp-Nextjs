@@ -24,14 +24,7 @@ const searchedEvents = () => {
 
   // checking if URL is valid so it doesnot take soma altered values like /events/abc/4
 
-  if (
-    isNaN(numYear) ||
-    isNaN(numMonth) ||
-    numYear > 2030 ||
-    numYear < 2021 ||
-    numMonth > 12 ||
-    numMonth < 1
-  ) {
+  if (props.hasError) {
     return (
       <Fragment>
         <ErrorAlert>
@@ -73,4 +66,44 @@ const searchedEvents = () => {
   );
 };
 
+export async function getServerSideProps(context) {
+  const { params } = context;
+
+  const filterData = params.slug;
+
+  const filteredYear = filterData[0];
+  const filteredMonth = filterData[1];
+
+  //  changing the value into number as in array we get strings only ['2021','4']
+  const numYear = +filteredYear;
+  const numMonth = +filteredMonth;
+
+  // checking if URL is valid so it doesnot take soma altered values like /events/abc/4
+
+  if (
+    isNaN(numYear) ||
+    isNaN(numMonth) ||
+    numYear > 2030 ||
+    numYear < 2021 ||
+    numMonth > 12 ||
+    numMonth < 1
+  ) {
+    return {
+      props: { hasError: true },
+      // notFound: true,
+      // redirect: {
+      //   destination: '/error'
+      // }
+    };
+  }
+
+  const filteredEvents = getFilteredEvents({
+    year: numYear,
+    month: numMonth,
+  });
+
+  return {
+    props: {},
+  };
+}
 export default searchedEvents;
