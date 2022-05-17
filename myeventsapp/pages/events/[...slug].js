@@ -1,30 +1,60 @@
-import React, { Fragment } from "react";
-import { useRouter } from "next/router";
-import { getFilteredEvents } from "../../helpers/api-util";
-import Eventlist from "../../components/events/event-list";
-import ResultsTitle from "../../components/events/results-title";
-import Button from "../../components/ui/button";
-import ErrorAlert from "../../components/ui/error-alert";
+import React, { Fragment, useEffect, useState } from 'react'
+import { useRouter } from 'next/router'
+// import { getFilteredEvents } from '../../helpers/api-util'
+import Eventlist from '../../components/events/event-list'
+import ResultsTitle from '../../components/events/results-title'
+import Button from '../../components/ui/button'
+import ErrorAlert from '../../components/ui/error-alert'
+
+import useSWR from 'swr'
 
 const searchedEvents = (props) => {
-  const router = useRouter();
+  const [loadedEvents, setLoadedEvents] = useState()
+  const router = useRouter()
 
-  // const filterData = router.query.slug;
+  const filterData = router.query.slug
+  const fetcher = (url) => fetch(url).then((res) => res.json())
 
-  // if (!filterData) {
-  //   return <p className="center">loading</p>;
-  // }
+  const { data, error } = useSWR(
+    'https://nextjs-events-7ea16-default-rtdb.firebaseio.com/events.json',
+    fetcher
+  )
 
-  // const filteredYear = filterData[0];
-  // const filteredMonth = filterData[1];
+  useEffect(() => {
+    if (data) {
+      const events = []
+      for (const key in data) {
+        events.push({
+          id: key,
+          ...data[key],
+        })
+      }
+      setLoadedEvents(events)
+    }
+  }, [data])
 
-  // //  changing the value into number as in array we get strings only ['2021','4']
-  // const numYear = +filteredYear;
-  // const numMonth = +filteredMonth;
+  if (!loadedEvents) {
+    return <p className="center">loading</p>
+  }
+
+  const filteredYear = filterData[0]
+  const filteredMonth = filterData[1]
+
+  //  changing the value into number as in array we get strings only ['2021','4']
+  const numYear = +filteredYear
+  const numMonth = +filteredMonth
 
   // checking if URL is valid so it doesnot take soma altered values like /events/abc/4
 
-  if (props.hasError) {
+  if (
+    isNaN(numYear) ||
+    isNaN(numMonth) ||
+    numYear > 2030 ||
+    numYear < 2021 ||
+    numMonth > 12 ||
+    numMonth < 1 ||
+    error
+  ) {
     return (
       <Fragment>
         <ErrorAlert>
@@ -34,10 +64,16 @@ const searchedEvents = (props) => {
           <Button link="/events">Show All Events </Button>
         </div>
       </Fragment>
-    );
+    )
   }
 
-  const filteredEvents = props.events;
+  const filteredEvents = loadedEvents.filter((event) => {
+    const eventDate = new Date(event.date)
+    return (
+      eventDate.getFullYear() === numYear &&
+      eventDate.getMonth() === numMonth - 1
+    )
+  })
 
   // check if there is no event
   if (!filteredEvents || filteredEvents.length === 0) {
@@ -50,63 +86,63 @@ const searchedEvents = (props) => {
           <Button link="/events">Show All Events</Button>
         </div>
       </Fragment>
-    );
+    )
   }
 
-  const date = new Date(props.date.year, props.date.month - 1); //date functions starts from 0 bt we have used from 1 in our form value
+  const date = new Date(numYear, numMonth - 1) //date functions starts from 0 bt we have used from 1 in our form value
 
   return (
     <Fragment>
       <ResultsTitle date={date} />
       <Eventlist items={filteredEvents} />
     </Fragment>
-  );
-};
-
-export async function getServerSideProps(context) {
-  const { params } = context;
-
-  const filterData = params.slug;
-
-  const filteredYear = filterData[0];
-  const filteredMonth = filterData[1];
-
-  //  changing the value into number as in array we get strings only ['2021','4']
-  const numYear = +filteredYear;
-  const numMonth = +filteredMonth;
-
-  // checking if URL is valid so it doesnot take soma altered values like /events/abc/4
-
-  if (
-    isNaN(numYear) ||
-    isNaN(numMonth) ||
-    numYear > 2030 ||
-    numYear < 2021 ||
-    numMonth > 12 ||
-    numMonth < 1
-  ) {
-    return {
-      props: { hasError: true },
-      // notFound: true,
-      // redirect: {
-      //   destination: '/error'
-      // }
-    };
-  }
-
-  const filteredEvents = await getFilteredEvents({
-    year: numYear,
-    month: numMonth,
-  });
-
-  return {
-    props: {
-      events: filteredEvents,
-      date: {
-        year: numYear,
-        month: numMonth,
-      },
-    },
-  };
+  )
 }
-export default searchedEvents;
+
+// export async function getServerSideProps(context) {
+//   const { params } = context
+
+//   const filterData = params.slug
+
+//   const filteredYear = filterData[0]
+//   const filteredMonth = filterData[1]
+
+//   //  changing the value into number as in array we get strings only ['2021','4']
+//   const numYear = +filteredYear
+//   const numMonth = +filteredMonth
+
+//   // checking if URL is valid so it doesnot take soma altered values like /events/abc/4
+
+//   if (
+//     isNaN(numYear) ||
+//     isNaN(numMonth) ||
+//     numYear > 2030 ||
+//     numYear < 2021 ||
+//     numMonth > 12 ||
+//     numMonth < 1
+//   ) {
+//     return {
+//       props: { hasError: true },
+//       // notFound: true,
+//       // redirect: {
+//       //   destination: '/error'
+//       // }
+//     }
+//   }
+
+//   const filteredEvents = await getFilteredEvents({
+//     year: numYear,
+//     month: numMonth,
+//   })
+
+//   return {
+//     props: {
+//       events: filteredEvents,
+//       date: {
+//         year: numYear,
+//         month: numMonth,
+//       },
+//     },
+//   }
+// }
+export default searchedEvents
