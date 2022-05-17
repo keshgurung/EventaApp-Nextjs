@@ -1,26 +1,26 @@
 import React, { Fragment } from "react";
 import { useRouter } from "next/router";
-import { getFilteredEvents } from "../../dummy-data";
+import { getFilteredEvents } from "../../helpers/api-util";
 import Eventlist from "../../components/events/event-list";
 import ResultsTitle from "../../components/events/results-title";
 import Button from "../../components/ui/button";
 import ErrorAlert from "../../components/ui/error-alert";
 
-const searchedEvents = () => {
+const searchedEvents = (props) => {
   const router = useRouter();
 
-  const filterData = router.query.slug;
+  // const filterData = router.query.slug;
 
-  if (!filterData) {
-    return <p className="center">loading</p>;
-  }
+  // if (!filterData) {
+  //   return <p className="center">loading</p>;
+  // }
 
-  const filteredYear = filterData[0];
-  const filteredMonth = filterData[1];
+  // const filteredYear = filterData[0];
+  // const filteredMonth = filterData[1];
 
-  //  changing the value into number as in array we get strings only ['2021','4']
-  const numYear = +filteredYear;
-  const numMonth = +filteredMonth;
+  // //  changing the value into number as in array we get strings only ['2021','4']
+  // const numYear = +filteredYear;
+  // const numMonth = +filteredMonth;
 
   // checking if URL is valid so it doesnot take soma altered values like /events/abc/4
 
@@ -37,10 +37,7 @@ const searchedEvents = () => {
     );
   }
 
-  const filteredEvents = getFilteredEvents({
-    year: numYear,
-    month: numMonth,
-  });
+  const filteredEvents = props.events;
 
   // check if there is no event
   if (!filteredEvents || filteredEvents.length === 0) {
@@ -56,7 +53,7 @@ const searchedEvents = () => {
     );
   }
 
-  const date = new Date(numYear, numMonth - 1); //date functions starts from 0 bt we have used from 1 in our form value
+  const date = new Date(props.date.year, props.date.month - 1); //date functions starts from 0 bt we have used from 1 in our form value
 
   return (
     <Fragment>
@@ -97,13 +94,19 @@ export async function getServerSideProps(context) {
     };
   }
 
-  const filteredEvents = getFilteredEvents({
+  const filteredEvents = await getFilteredEvents({
     year: numYear,
     month: numMonth,
   });
 
   return {
-    props: {},
+    props: {
+      events: filteredEvents,
+      date: {
+        year: numYear,
+        month: numMonth,
+      },
+    },
   };
 }
 export default searchedEvents;
